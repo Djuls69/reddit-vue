@@ -1,32 +1,47 @@
 <template>
-  <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
-    <router-view/>
+  <div>
+    <the-header></the-header>
+    <router-view class="container main" />
   </div>
 </template>
 
-<style lang="scss">
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-}
+<script>
+import firebase from 'firebase/app'
+import store from '@/store'
+import TheHeader from './components/TheHeader.vue'
 
-#nav {
-  padding: 30px;
-
-  a {
-    font-weight: bold;
-    color: #2c3e50;
-
-    &.router-link-exact-active {
-      color: #42b983;
-    }
+export default {
+  components: {
+    TheHeader
+  },
+  created() {
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        const newUser = {
+          id: user.uid,
+          name: user.displayName,
+          image: user.photoURL,
+          created_at: firebase.firestore.FieldValue.serverTimestamp()
+        }
+        firebase
+          .firestore()
+          .collection('users')
+          .doc(newUser.id)
+          .set(newUser)
+        store.commit('auth/setUser', newUser)
+        if (this.$route.path !== '/subreddits') {
+          this.$router.push('/subreddits')
+        }
+      } else {
+        store.commit('auth/setUser', null)
+      }
+    })
   }
+}
+</script>
+
+<style lang="scss">
+.main {
+  margin-top: 2em !important;
 }
 </style>
